@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../css/style.css" rel="stylesheet" />
+		<style>
+			.mui-scroll-wrapper{
+				margin-top:84.5px;
+			}
+			ul,li{
+				list-style:none;
+				padding:0;
+				margin:0;
+			}
+			.mui-scroll-wrapper h1{
+				font-size:16px;
+				color:red;
+				font-style:italic;
+				width:30px;
+				margin:40px auto 15px ;
+				display:block;
+				position:relative;
+			}
+			.mui-scroll-wrapper h1:after,.mui-scroll-wrapper h1:before{
+				content:'';
+				position:absolute;
+				width:50px;
+				height:0.5px;
+				background:#c4c4c4;
+				top:8px;
+			}
+			.mui-scroll-wrapper h1:after{
+				left:-70px;
+			}
+			.mui-scroll-wrapper h1:before{
+				left:30px;
+			}
+			.card{
+				margin:0 15px;
+				height:120px;
+				border:1px solid #c4c4c4;
+				border-radius:2px;
+				padding:15px;
+				box-shadow:0 1px 5px #C4C4C4;
+			}
+			.card img{
+				width:70px;
+				height:95px;
+				margin-right:10px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+		    <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+		    <h1 class="mui-title">豆瓣Top250</h1>
+		</header>
+		<div class="mui-content" style="background:white">
+			<div class="top-nav">
+				<div class="mui-segmented-control mui-segmented-control-inverted" id="nav">
+					<a class="mui-control-item mui-active" tabindex="0">Top1-50</a>
+					<a class="mui-control-item" tabindex="1">51-100</a>
+					<a class="mui-control-item" tabindex="2">101-150</a>
+					<a class="mui-control-item" tabindex="3">151-200</a>
+					<a class="mui-control-item" tabindex="4">201-250</a>
+				</div>
+				<div style="width:100%;height:0.5px;background:#c4c4c4"></div>
+			</div>
+			<div class="mui-scroll-wrapper" id="content">
+			    <div class="mui-scroll">
+			        <ul>
+			        	<li v-for="(item,i) in list" :key="item.id" @tap="open_detail(item)">
+			        		<h1>{{ item.sort }}</h1>
+			        		<div class="card">
+			        			<img class="mui-pull-left" :src="item.cover"/>
+			        			<div class="dark-big">{{ item.title }}</div>
+			        			<div class="gray-small">
+			        				豆瓣评分
+			        				<span class="orange-small">{{ item.score }}分</span>
+			        			</div>
+			        			<div class="gray-small mui-ellipsis">导演:{{ item.directors }}</div>
+			        			<div class="gray-small mui-ellipsis">演员:{{ item.casts }}></div>
+			        		</div>
+			        		<div v-if="i===list.length-1" class="gray-medium" style="text-align:center;margin:15px 0">----------- 到底啦 -----------</div>
+			        	</li>
+			        </ul>
+			    </div>
+			</div>
+		</div>
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/vue.js"></script>
+		<script type="text/javascript">
+			mui.init({
+				swipeBack: true//启用右滑关闭功能
+			});
+			//顶部点击切换不同数据
+			mui('#nav').on('tap','a',function () {
+				getData(this.getAttribute('tabindex') * 50);
+			});
+			var detailPage = null;
+			//vue进行数据绑定
+			var data_detail = new Vue({
+				el:'#content',
+				data:{
+					list:[]
+				},
+				methods:{
+					//打开电影详情页，并传递id
+					open_detail:function(item) {
+						mui.fire(detailPage,'movieId',{
+							id:item.id
+						});
+						detailPage.show('slide-in-right');
+					}
+				}
+			});
+			mui.plusReady(function() {
+				//得到预加载
+				detailPage = plus.webview.getWebviewById('movie-detail');
+				//没有就新创建
+				if(!detailPage) {
+					detailPage = mui.preload({
+						id:'movie-detail',
+						url:'./movie-detail.html'
+					});
+				}
+				//进入页面加载前50条数据
+				getData(0);
+			});
+			//初始化区域滚动
+			mui('.mui-scroll-wrapper').scroll({
+				indicators:true
+			});
+			//获取数据的方法
+			function getData(start) {
+				plus.nativeUI.showWaiting('加载中..',{
+					width:'100px',
+					height:'100px'
+				});
+				mui.getJSON('http://api.douban.com/v2/movie/top250',{start:start,count:50},function(result) {
+					data_detail.list = convert(result);
+					//每次数据加载完列表滚动到顶部
+					mui('.mui-scroll-wrapper').scroll().scrollTo(0,0,100);
+					plus.nativeUI.closeWaiting();
+				})
+			};
+			//数据处理方法
+			function convert(obj) {
+				var newData = [];
+				var items = obj.subjects;
+				items.forEach(function(item,index) {
+					var directors = '';
+					for(var i = 0; i < item.directors.length; i++) {
+						directors += item.directors[i].name;
+						if(i !== item.directors.length - 1) {
+							directors += '/';
+						}
+					}
+					var casts = '';
+					for(var i = 0; i < item.casts.length; i++) {
+						casts += item.casts[i].name;
+						if(i !== item.casts.length - 1) {
+							casts += '/';
+						}
+					}
+					newData.push({
+						sort:index + obj.start + 1,
+						id:item.id,
+						title:item.title,
+						cover:item.images.medium,
+						score:item.rating.average,
+						directors:directors,
+						casts:casts
+					})
+				});
+				return newData;
+			}
+		</script>
+	</body>
+
+</html>

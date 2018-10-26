@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../css/style.css" rel="stylesheet" />
+		<style>
+			.mui-content{
+				background:white;
+			}
+			.search-box{
+				padding:15px 0;
+				display:flex;
+				text-align:center;
+			}
+			.search-box .mui-search{
+				width:80%;
+				box-sizing: border-box;
+				margin-left:15px;
+				height:34px;
+			}
+			.search-box .mui-active:before{
+				line-height:34px;
+			}
+			#cancel{
+				color:#2A7CF8;
+				width:20%;
+				text-align:center;
+				line-height:34px;
+			}
+			.record-box{
+				font-size:12px;
+				color:#888;
+				background:#e6e6e6;
+				padding:5px 15px;
+			}
+			#clear{
+				float:right;
+				color:#2A7CF8;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="mui-content">
+			<div class="search-box">
+				<div class="mui-input-row mui-search">
+				    <input type="search" class="mui-input-clear" placeholder="电影/电视剧/影人" id="search">
+				</div>
+				<span id="cancel">取消</span>
+			</div>
+			<div class="record-box">
+				<span>搜索记录</span>
+				<span id="clear">清除</span>
+			</div>
+			<ul class="mui-table-view" id="content">
+				<li class="mui-table-view-cell dark-medium" v-for="item in records" :key="item" @tap="open_result(item)">{{ item }}</li>
+			</ul>
+		</div>
+			
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/vue.js"></script>
+		<script type="text/javascript">
+			mui.init({
+				swipeBack: true//启用右滑关闭功能
+			});
+			mui('#cancel')[0].addEventListener('tap',function() {
+				mui.back();
+			},false);
+			var searchData = new Vue({
+				el:'#content',
+				data:{
+					records:[]
+				},
+				methods:{
+					//点击搜索记录打开搜素结果页的方法
+					open_result:function(item) {
+						mui.openWindow({
+							id:'search-result',
+							url:'./search-result.html',
+							extras:{
+								name:item
+							}
+						});
+						//并把点击的这个放到记录的第一条
+						var i = find(this.records,item);
+						this.records.splice(i,1);
+						this.records.splice(0,0,item);
+						plus.storage.setItem('history','');
+						plus.storage.setItem('history',this.records.toString());
+					}
+				}
+			});
+			//软键盘调用事件
+			var openSoftKeyboard = function() {
+                if(mui.os.ios) {
+                    var webView = plus.webview.currentWebview().nativeInstanceObject();
+                    webView.plusCallMethod({
+                        "setKeyboardDisplayRequiresUserAction": false
+                    });
+                } else {
+                    var webview = plus.android.currentWebview();
+                    plus.android.importClass(webview);
+                    webview.requestFocus();
+                    var Context = plus.android.importClass("android.content.Context");
+                    var InputMethodManager = plus.android.importClass("android.view.inputmethod.InputMethodManager");
+                    var main = plus.android.runtimeMainActivity();
+                    var imm = main.getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(0, InputMethodManager.SHOW_FORCED);
+                }
+            }
+			mui.plusReady(function() {
+				//进入页面有搜索记录时把记录以数组的形式添加到vue中
+				if(plus.storage.getItem('history') !== '' && plus.storage.getItem('history')) {
+					searchData.records = plus.storage.getItem('history').split(',');
+				}
+				//页面隐藏事件
+                plus.webview.currentWebview().addEventListener("hide",function(e){
+                    document.getElementById("search").value="";
+                    document.getElementById("search").blur();//搜索框取消焦点，关闭软键盘
+                });
+                //页面打开自动获取焦点
+				 plus.webview.currentWebview().addEventListener("show",function(e){
+                    setTimeout(function() {//自动打开软键盘，搜索框获取焦点
+                        openSoftKeyboard();
+                        document.getElementById("search").focus();
+                    }, 0);
+                    return false;
+                });
+			});
+			//清除记录
+			mui('#clear')[0].addEventListener('tap',function() {
+				//清除本地storage以及vue中的数据
+				plus.storage.setItem('history','');
+				searchData.records = [];
+			},false);
+			//工具方法，判断数组中是否有这个值,并返回这个值在数组中的索引
+			function find(arr,val) {
+				var flag = -1;
+				arr.forEach(function(item,i) {
+					if(item === val) {
+						flag = i;
+					}
+				});
+				return flag;
+			};
+			//键盘事件(enter触发搜索事件，并跳转到搜索结果页面)
+			document.onkeydown = function(e) {
+				var e = e || window.event;
+				var searchVal = document.getElementById('search').value;
+				//回车
+				if(e && e.keyCode === 13) {
+					//搜索的内容搜索过,先删除
+					if(find(searchData.records,searchVal) !== -1) {
+						var i = find(searchData.records,searchVal);
+						searchData.records.splice(i,1);
+					}
+					//再添加到第一个,并保存到本地storage
+					searchData.records.splice(0,0,searchVal);
+					plus.storage.setItem('history',searchData.records.toString());
+					//跳转到搜索结果页面，同时把搜索值传递过去
+					mui.openWindow({
+						id:'search-result',
+						url:'./search-result.html',
+						extras:{
+							name:searchVal
+						}
+					});
+				}
+			}
+		</script>
+	</body>
+
+</html>

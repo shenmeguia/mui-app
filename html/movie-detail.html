@@ -1,0 +1,282 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../css/style.css" rel="stylesheet" />
+		<style>
+			ul,li{
+				list-style:none;
+				padding:0;
+				margin:0;
+			}
+			.mui-content{
+				background:white;
+			}
+			.mui-bar-nav{
+				box-shadow:none;
+				-webkit-box-shadow:none;
+			}
+			.top-img-block{
+				padding:10px 0;
+				text-align:center;
+				background:#3c3c3c;
+			}
+			.top-img-block img{
+				width:160px;
+				height:240px;
+			}
+			.mui-ellipsis-4 {
+				display: -webkit-box;
+				overflow: hidden;
+				white-space: normal !important;
+				text-overflow: ellipsis;
+				word-wrap: break-word;
+				-webkit-line-clamp: 4;
+				-webkit-box-orient: vertical;
+			}
+			.profiles{
+				padding:15px;
+				height:90px;
+				overflow:hidden;
+			}
+			.profiles span{
+				display:block;
+			}
+			.profiles .left{
+				float:left;
+			}
+			.profiles .right{
+				float:right;
+				width:60px;
+				height:60px;
+				background:white;
+				text-align:center;
+				box-shadow:0 0 10px #aaa;
+			}
+			.profiles .right .gray-micro{
+				line-height:15px;
+			}
+			.profiles .right .dark-big{
+				line-height:20px;
+			}
+			.profiles .right span:nth-child(1){
+				margin-top:5px;
+			}
+			.content{
+				padding:0 15px 0 15px;
+				box-sizing: border-box;
+			}
+			.content .line{
+				width:100%;
+				height:0.5px;
+				background:#a2a2a2;
+			}
+			.content p:nth-of-type(1){
+				padding-top:10px;
+				margin-left:-5px;
+			}
+			.content .img-boxs{
+				overflow-x:scroll;
+				white-space:nowrap;
+				padding-bottom:30px;
+			}
+			.content .img-boxs li{
+				display:inline-block;
+				margin-right: 10px;
+				text-align:center;
+			}
+			.content .img-boxs li img{
+				width:70px;
+				height:100px;
+				display:block;
+			}
+			.content .img-boxs li span{
+				width:70px;
+			}
+			.comment{
+				margin-top:10px;
+			}
+			.comment > p{
+				line-height:40px;
+				background:#e6e6e6;
+				text-align:center;
+			}
+			.comment .comment-list{
+				padding:0 15px;
+			}
+			.comment .comment-list li{
+				border-bottom:1px solid #ccc;
+				margin-top:5px;
+			}
+			.comment .comment-list p{
+				margin-left:40px;
+			}
+			.comment img{
+				width: 30px;
+				height: 30px;
+				border-radius: 30px;
+			}
+			.comment .title span{
+				line-height:30px;
+			}
+			.comment .title span:nth-child(1){
+				margin-left:10px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+		    <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+		    <h1 class="mui-title">电影</h1>
+		</header>
+		<div class="mui-content" id="content">
+			<div class="top-img-block">
+				<img :src="cover"/ @click="resetData">
+			</div>
+			<div class="profiles">
+				<div class="left">
+					<span class="dark-big">{{ title }}</span>
+					<span class="gray-small">{{ year }}/{{ countries }}/{{ genres }}</span>
+					<span class="gray-small">{{ directors.length > 0 ? directors[0].name : '' }}导演作品</span>
+				</div>
+				<div class="right">
+					<span class="gray-micro">豆瓣评分</span>
+					<span class="dark-big" v-if="score>0">{{ score }}</span>
+					<span class="dark-medium" v-if="score==0">暂无评分</span>
+					<span class="gray-micro">{{ ratingCount }}人</span>
+				</div>
+			</div>
+			<div class="content">
+				<div class="line"></div>
+				<p class="gray-small">剧情简介</p>
+				<p class="dark-medium mui-ellipsis-4">
+					{{ summary }}
+				</p>
+				<p class="gray-small">演员</p>
+				<div style="height:130px;overflow-y:hidden">
+					<ul class="img-boxs">
+						<li v-for="item in casts" :key="item.id" @tap="open_detail(item)">
+							<img :src="item.avatars.small" v-if="item.avatars"/>
+							<p v-if="!item.avatars" style="width:70px;height:100px">暂<br>无<br>图<br>片</p>
+							<span class="dark-micro mui-ellipsis">{{ item.name }}</span>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="comment">
+				<p class="dark-medium">评论</p>
+				<ul class="comment-list">
+					<li>
+						<img src="../images/moren.jpg" class="mui-pull-left"/>
+						<div class="title">
+							<span class="dark-medium">何小沁</span>
+							<span class="gray-medium mui-pull-right">2018-10-08</span>
+						</div>
+						<p class="gray-medium">
+							导演说，拍这部电影是想让现在的年轻人知道，发哥意味着什么——还用问嘛，意味着天下无双的帅啊！！怀揣艺术匠心开创假钞帝国的大亨，乍听有点像奥斯卡路数的枭雄传记片，影片整体那种复古质感也很好。片中周润发多次小马哥附体，颜值，大长腿，最重要的是又雅又痞，风度翩翩，一比这届鲜肉真是弱爆了。郭天王也很好玩，这次演个怂包（伪）。发哥和城城真是强攻&弱受组合，对话完全是个喜剧片（当然两位演技都很棒，搞笑也能立住不垮），看到最后又一切都能说通了，也到最后才知道片名是什么含义。今年国庆档三强，无双、影、李茶的姑妈，居然都是讲一个人的真假身份，有趣
+						</p>
+					</li>
+					<li>
+						<img src="../images/moren.jpg" class="mui-pull-left"/>
+						<div class="title">
+							<span class="dark-medium">阿德</span>
+							<span class="gray-medium mui-pull-right">2018-10-08</span>
+						</div>
+						<p class="gray-medium">
+							做为一名发哥死忠，终于盼到发哥回归港片，表演上依然是潇洒自如、诙谐逗趣，庄文强对故事和人物的打磨也保持一惯的品质，这才是商业片应有的样子。PS：首映红毯蹲守到发哥了啊啊啊啊！！
+						</p>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/vue.js"></script>
+		<script type="text/javascript">
+			mui.init({
+				swipeBack: true//启用右滑关闭功能
+			});
+			//默认的数据，都为空
+			function getDefaultData(){
+				return{
+					title:'',
+					cover:'',
+					score:'',
+					ratingCount:'',
+					summary:'',
+					countries:'',
+					year:'',
+					genres:'',
+					casts:[],
+					directors:[]
+				}
+			};
+			//使用vue进行数据绑定
+			data_detail = new Vue({
+				el:'#content',
+				data:getDefaultData(),
+				methods:{
+					//重置数据为空的方法
+					resetData:function() {
+						for(var key in this.$data) {
+							this.$data[key] = '';
+						}
+					},
+					//打开演员详情页面的方法
+					open_detail:function(item) {
+						if(!item.id) {
+							return;
+						}
+						mui.fire(openCast,'castId',{
+							id:item.id
+						});
+						openCast.show('slide-in-right');
+					}
+				}
+			});
+			//页面关闭添加隐藏事件返回顶部并清空数据
+			mui.plusReady(function() {
+				var self = plus.webview.currentWebview();
+				self.addEventListener('hide',function() {
+					window.scrollTo(0,0);
+					data_detail.resetData();
+				},false);
+				//预加载演员详情页面
+				openCast = mui.preload({
+					url:'./cast-detail.html',
+					id:'cast-detail'
+				});
+			});
+			//添加自定义的movieId事件
+			window.addEventListener('movieId',function(e) {
+				//获取传递的id
+				var id = e.detail.id;
+				//mui 原生等待框显示showWaiting
+				plus.nativeUI.showWaiting('加载中',{
+					width:'100px',
+					height:'100px'
+				});
+				//根据电影id获取对应数据
+				mui.getJSON('https://api.douban.com/v2/movie/subject/'+id,function(resp){
+					data_detail.title = resp.title;
+					data_detail.cover = resp.images.medium;
+					data_detail.score = resp.rating.average;
+					data_detail.ratingCount = resp.ratings_count;
+					data_detail.summary = resp.summary;
+					data_detail.countries = resp.countries.toString().replace(/\,/g,'/');
+					data_detail.year = resp.year;
+					data_detail.genres = resp.genres.toString().replace(/\,/g,'/');
+					data_detail.casts = resp.casts;
+					data_detail.directors = resp.directors;
+					//加载完成关闭等待框
+					plus.nativeUI.closeWaiting();
+				})
+			},false);
+		</script>
+	</body>
+
+</html>

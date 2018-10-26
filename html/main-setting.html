@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Hello MUI</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+		<link rel="stylesheet" href="../css/mui.min.css">
+		<link rel="stylesheet" href="../css/style.css" />
+		<style>
+			html,body {
+				background-color: white;
+			}
+			.mui-table-view-cell::after{
+				left:0;
+			}
+		</style>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+		    <h1 class="mui-title">设置</h1>
+		</header>
+		<div class="mui-content">
+			<ul class="mui-table-view">
+				<li class="mui-table-view-cell">
+					<a class="mui-navigate-right dark-big">意见反馈</a>
+				</li>
+				<li class="mui-table-view-cell" id="cache">
+					<a class="mui-navigate-right dark-big">清除缓存</a>
+				</li>
+				<li class="mui-table-view-cell" id="aboutus">
+					<a class="mui-navigate-right dark-big">关于我们</a>
+				</li>
+			</ul>
+		</div>
+	</body>
+	<script src="../js/mui.min.js"></script>
+	<script>
+		mui.init();
+		document.getElementById('aboutus').addEventListener('tap',function() {
+			console.log(1);
+			mui.openWindow({
+				url:'./about.html'
+			});
+		},false);
+		mui.plusReady(function() {
+			//清除缓存
+			mui('#cache')[0].addEventListener('tap',function() {
+				plus.cache.calculate(function(size) {
+	            sizeCache = size;
+	            mui.confirm("您目前的系统缓存为" + parseFloat(sizeCache / (1024 * 1024)).toFixed(2) + "M？", "清除缓存", ["确认", "取消"], function(e) {
+	                	if(e.index == 1) {} else {
+	                    	plus.cache.clear(function() {
+	                        	mui.toast('缓存清除成功');
+	                    	});
+	                	}
+	            	});
+	        	});
+			},false);
+		})
+	</script>
+</html>

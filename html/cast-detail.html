@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../css/style.css" rel="stylesheet" />
+		<style>
+			ul,li,p{
+				list-style:none;
+				padding:0;
+				margin:0;
+			}
+			.top-img-block{
+				padding:10px 0;
+				text-align:center;
+				background:#3c3c3c;
+			}
+			.top-img-block img{
+				width:160px;
+				height:240px;
+			}
+			.info{
+				padding:15px;
+			}
+			.works-box{
+				height:160px;
+				overflow-y:hidden;
+				padding-left:15px;
+			}
+			.works-box ul{
+				overflow-x:scroll;
+				white-space:nowrap;
+				padding-bottom:20px;
+			}
+			.works-box ul li{
+				display:inline-block;
+				margin-right:10px;
+				text-align:center;
+				width:70px;
+			}
+			.works-box ul li img{
+				width:70px;
+				height:100px;
+				display:block;
+			}
+			.works-box ul li .orange-small{
+				line-height:15px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+		    <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+		    <h1 class="mui-title">影人</h1>
+		</header>
+		<div class="mui-content" id="content">
+			<div class="top-img-block">
+				<img :src="cover"/>
+			</div>
+			<div class="info">
+				<p class="dark-big">{{ name }}</p>
+				<p class="gray-medium">{{ enName }}</p>
+				<p class="gray-small">个人简介</p>
+				<p class="dark-medium">{{ summary }}</p>
+			</div>
+			<div class="works-box">
+				<p class="gray-small">代表作品</p>
+				<ul>
+					<li v-for="(item,i) in  works" :key="i" @tap="open_detail(item)">
+						<img :src="item.subject.images.large"/>
+						<p class="dark-micro mui-ellipsis">{{ item.subject.title }}</p>
+						<p class="orange-small mui-ellipsis">{{ item.subject.rating.average }}</p>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/vue.js"></script>
+		<script type="text/javascript">
+			mui.init({
+				swipeBack: true//启用右滑关闭功能
+			});
+			//默认数据
+			function getDefaultData(){
+				return{
+					name:'',
+					enName:'',
+					cover:'',
+					summary:'',
+					works:[]
+				}
+			};
+			var detailPage = null;
+			//使用vue绑定数据
+			data_detail = new Vue({
+				el:'#content',
+				data:getDefaultData(),
+				methods:{
+					//清空data数据的方法
+					resetData:function() {
+						for(var key in this.$data) {
+							this.$data[key] = '';
+						}
+					},
+					//打开电影详情页面
+					open_detail: function(item) {
+						mui.fire(detailPage,'movieId',{
+							id:item.subject.id
+						});
+						detailPage.show('slide-in-right');
+					}
+				}
+			});
+			window.addEventListener('castId',function(e) {
+				var id = e.detail.id;
+				//加载动画
+				plus.nativeUI.showWaiting('加载中',{
+					width:'100px',
+					height:'100px'
+				})
+				//获取数据
+				mui.getJSON('https://api.douban.com/v2/movie/celebrity/' + id,function(data) {
+					data_detail.name = data.name;
+					data_detail.enName = data.name_en;
+					data_detail.cover = data.avatars.large;
+					data_detail.summary = data.name+'，'+data.gender+'，'+data.born_place;
+					data_detail.works = data.works;
+					//数据加载完关闭加载动画
+					plus.nativeUI.closeWaiting();
+				});
+			},false);
+			mui.plusReady(function() {
+				var self = plus.webview.currentWebview();
+				//获取预加载，没有就新建
+				detailPage = plus.webview.getWebviewById('movie-detail');
+				if(!detailPage) {
+					detailPage = mui.preload({
+						url:'./movie-detail.html',
+						id:'movie-detail'
+					})
+				}
+				//添加隐藏事件并清空数据
+				self.addEventListener('hide',function() {
+					window.scrollTo(0,0);
+					data_detail.resetData();
+				},false);	
+			});
+		</script>
+	</body>
+
+</html>

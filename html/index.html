@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>首页</title>
+		<script src="../js/mui.min.js"></script>
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../css/style.css" rel="stylesheet" />
+		<style>
+			html,
+			body {
+				background-color: white;
+			}
+			.mui-content{
+				background:white;
+			}
+			.wrap-search{
+				background:#e6e6e6;
+				margin:15px;
+				height:30px;
+				border-radius:5px;
+				text-align:center;
+			}
+			.wrap-search .mui-icon{
+				font-size:16px;
+				color:#aaa;
+				line-height:30px;
+			}
+			.wrap-search .search-text{
+				font-size:14px;
+				color:#aaa;
+				line-height:30px;
+			}
+			.item-img{
+				width:60px;
+				height:90px;
+				margin-right:10px;
+			}
+			.mui-scroll-wrapper{
+				margin-top:20px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="mui-content">
+			<div class="wrap-search">
+				<span class="mui-icon mui-icon-search"></span>
+				<span class="search-text">电影/电视剧/影人</span>
+			</div>
+			<!--区域滚动和列表-->
+			<div id="pullrefresh" class="mui-scroll-wrapper">
+				<div class="mui-scroll">
+					<ul class="mui-table-view" id="movies">
+						<li class="mui-table-view-cell" v-for="item in movies" :key="item.title" @tap="open_detail(item)">
+							<img class="item-img mui-pull-left" :src="item.cover"/>
+							<div class="item-content">
+								<h1 class="dark-big mui-ellipsis">{{ item.title }}</h1>
+								<div>
+									<span class="gray-small">{{ item.genres }}</span>&nbsp;
+									<span class="orange-small" v-if="item.score==0">暂无评分</span>
+									<span class="orange-small" v-if="item.score>0">{{ item.score }}分</span>
+								</div>
+								<div class="gray-small mui-ellipsis">导演 {{ item.directors }}</div>
+								<div class="gray-small mui-ellipsis">主演 {{ item.casts }}</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<script src="../js/util.js"></script>
+		<script src="../js/vue.js"></script>
+		<script type="text/javascript">
+			(function() {
+				mui.init({
+					swipeBack: true, //启用右滑关闭功能
+					pullRefresh : {
+				    container:"#pullrefresh",//下拉刷新容器标识，querySelector能定位的css选择器均可，比如：id、.class等
+				    up: {
+						contentrefresh: '正在加载...',
+						callback: pullupRefresh
+					},
+				    down : {
+				      style:'circle',
+				      auto:true,
+				      callback :pulldownRefresh //必选，刷新函数，根据具体业务来编写，比如通过ajax从服务器获取新数据；
+				    }
+				  }
+				});
+				//使用vue进行数据绑定
+				data_movies = new Vue({
+					el: '#movies',
+					data: {
+						movies: []
+					},
+					methods:{
+						//打开电影详情页面
+						open_detail: function(item) {
+							//mui.fire跨页面传值
+							//触发详情页面自定义的movieId事件
+							mui.fire(detailPage,'movieId',{
+								id:item.id
+							});
+							//打开预加载完成的电影详情页面
+			//				mui.openWindow({
+			//					id:'movie-detail'
+			//				});
+							//有动画的打开方式
+							detailPage.show('slide-in-right');
+						}
+					}
+				});
+				mui.plusReady(function() {
+					// 创建子webview窗口 并初始化
+					var aniShow = {};
+					util.initSubpage(aniShow);
+					var nview = plus.nativeObj.View.getViewById('tabBar'),
+						activePage = plus.webview.currentWebview(),
+						targetPage,
+						subpages = util.options.subpages,
+						pageW = window.innerWidth,
+						currIndex = 0;
+						
+					/**
+					 * 根据判断view控件点击位置判断切换的tab
+					 */
+					nview.addEventListener('click', function(e) {
+						var clientX = e.clientX;
+						if(clientX > 0 && clientX <= parseInt(pageW * 0.33)) {
+							currIndex = 0;
+						} else if(clientX > parseInt(pageW * 0.33) && clientX <= parseInt(pageW * 0.67)) {
+							currIndex = 1;
+						} else {
+							currIndex = 2;
+						}
+						// 匹配对应tab窗口	
+						if(currIndex > 0) {
+							targetPage = plus.webview.getWebviewById(subpages[currIndex - 1]);
+						} else {
+							targetPage = plus.webview.currentWebview();
+						}
+
+						if(targetPage == activePage) {
+							return;
+						}
+
+						if(currIndex !== 3) { 
+							//底部选项卡切换
+							util.toggleNview(currIndex);
+							// 子页面切换
+							util.changeSubpage(targetPage, activePage, aniShow);
+							//更新当前活跃的页面
+							activePage = targetPage;
+						}
+					});
+					//预加载页面mui.preload必须放在plusReady事件中
+					//通过mui.preload方法预加载电影详情页面
+					detailPage = mui.preload({
+					    url:'./movie-detail.html',
+					    id:'movie-detail',//默认使用当前页面的url作为id
+					});
+				});
+				//下拉刷新的函数   重新加载数据
+				function pulldownRefresh() {
+					//请求数据
+					mui.getJSON("https://api.douban.com/v2/movie/in_theaters",{start:0,count:10},function(data) {
+						//添加最新获取到的数据
+						data_movies.movies = convert(data.subjects);
+						mui('#pullrefresh').pullRefresh().endPulldownToRefresh();
+					});
+					
+				};
+				//上拉加载更多，数据分页
+				function pullupRefresh() {
+					//请求热映列表接口
+					mui.getJSON('https://api.douban.com/v2/movie/in_theaters', {
+						start:data_movies.movies.length,
+						count:10
+					}, function(data) {
+						if(data_movies.movies.length === data.total){
+							mui.toast('到底啦');
+						}else{
+							mui.toast('正在加载...');
+						}
+						data_movies.movies = data_movies.movies.concat(convert(data.subjects));
+						mui('#pullrefresh').pullRefresh().endPullupToRefresh(data_movies.movies.length > data.total);
+					});
+				};
+				//搜索框点击跳转搜索页面
+				mui(".wrap-search")[0].addEventListener("tap",function () {
+					mui.openWindow({
+						url:'./search.html',
+						id:'search'
+					});
+				});
+				
+				//数据转换方法(请求回来的数据转换成项目直接能使用的数据)
+				function convert(items) {
+					var newData = [];
+					items.forEach(function(item) {
+						//genres 转换成/连接的字符串   电影类型
+						var genres = item.genres.toString().replace(/\,/g,'/');
+						//directors同上   导演
+						var directors = '';
+						for(var i = 0; i < item.directors.length; i++) {
+							directors += item.directors[i].name;
+							//不是最后一个就需要/
+							if(i != item.directors.length - 1) {
+								directors += '/';
+							}
+						};
+						//casts同上   演员
+						var casts = '';
+						for(var i = 0; i < item.casts.length; i++) {
+							casts += item.casts[i].name;
+							if(i != item.casts.length - 1) {
+								casts += '/';
+							}
+						};
+						newData.push({
+							id:item.id,
+							title:item.title,
+							genres:genres,
+							cover:item.images.large,
+							score:item.rating.average,
+							directors:directors,
+							casts:casts
+						})
+					});
+					return newData;
+				}
+			})();
+		</script>
+	</body>
+</html>
